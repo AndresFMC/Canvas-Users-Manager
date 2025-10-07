@@ -2,7 +2,14 @@
 __pycache__/
 *.py[codz]
 *$py.class
+# .gitignore
 
+# Archivos de datos
+data/
+*.csv
+
+# Archivos de sistema de macOS
+.DS_Store
 # C extensions
 *.so
 
