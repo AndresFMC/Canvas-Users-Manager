@@ -156,7 +156,73 @@ function renderUsers(users) {
     
     // Actualizar checkbox de "seleccionar todo"
     updateSelectAllCheckbox();
+    
+    // Configurar event delegation para los botones de cursos
+    setupCourseButtons();
 }
+
+function setupCourseButtons() {
+    // Remover listener anterior si existe
+    const tbody = document.getElementById('userTableBody');
+    
+    // Event delegation: escuchar clicks en todos los botones .show-all-courses
+    tbody.addEventListener('click', function(e) {
+        // Verificar si el click fue en un botón de "ver más cursos"
+        const button = e.target.closest('.show-all-courses');
+        if (!button) return;
+        
+        // Obtener todos los cursos del data attribute
+        const allCoursesJson = button.getAttribute('data-all-courses');
+        if (!allCoursesJson) return;
+        
+        try {
+            const courses = JSON.parse(allCoursesJson);
+            showCoursesModal(courses, button);
+        } catch (error) {
+            console.error('Error parsing courses:', error);
+        }
+    });
+}
+
+function showCoursesModal(courses, button) {
+    // Destruir popover anterior si existe
+    let popover = bootstrap.Popover.getInstance(button);
+    if (popover) {
+        popover.dispose();
+    }
+    
+    // Crear contenido HTML
+    const coursesHtml = courses.map(c => 
+        `<div class="course-item">${escapeHtml(c)}</div>`
+    ).join('');
+    
+    // Crear nuevo popover
+    popover = new bootstrap.Popover(button, {
+        html: true,
+        placement: 'left',
+        title: `Todos los cursos (${courses.length})`,
+        content: `<div class="courses-popover-content">${coursesHtml}</div>`,
+        trigger: 'manual', // Manual para control total
+        sanitize: false
+    });
+    
+    // Mostrar popover
+    popover.show();
+    
+    // Cerrar al hacer click fuera
+    const closePopover = (e) => {
+        if (!button.contains(e.target) && !document.querySelector('.popover')?.contains(e.target)) {
+            popover.hide();
+            document.removeEventListener('click', closePopover);
+        }
+    };
+    
+    // Esperar un tick para que el popover se renderice
+    setTimeout(() => {
+        document.addEventListener('click', closePopover);
+    }, 100);
+}
+
 
 function createUserRow(user) {
     const tr = document.createElement('tr');
@@ -210,11 +276,20 @@ function renderCourses(courseCodesStr, numCourses) {
     ).join(' ');
     
     if (remaining > 0) {
-        html += ` <span class="text-muted">+${remaining} más</span>`;
+        // Guardar todos los cursos en data attribute
+        const allCoursesJson = JSON.stringify(courses);
+        
+        html += ` <button type="button" 
+                        class="btn btn-sm btn-outline-secondary show-all-courses" 
+                        data-all-courses='${escapeHtml(allCoursesJson)}'>
+                    +${remaining} más
+                </button>`;
     }
     
     return html;
 }
+
+
 
 // ============= SELECCIÓN DE USUARIOS =============
 function toggleUserSelection(userId, selected) {

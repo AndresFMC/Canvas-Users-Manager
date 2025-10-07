@@ -89,14 +89,19 @@ def get_users():
     # Obtener slice
     df_page = df_filtered.iloc[start_idx:end_idx]
     
-    # Convertir a lista de diccionarios
+    # Convertir a lista de diccionarios y LIMPIAR NaN
     users = df_page.to_dict('records')
     
-    # Formatear fechas para mejor visualización
+    # CRITICAL FIX: Convertir NaN a None (que se serializa como null en JSON)
     for user in users:
-        # Mantener valores originales pero formatear para display
+        # Formatear fechas para mejor visualización
         user['created_at_display'] = format_date(user['created_at'])
         user['last_login_display'] = format_date(user['last_login'])
+        
+        # Convertir NaN a None para evitar error JSON
+        for key, value in user.items():
+            if pd.isna(value):
+                user[key] = None
     
     return jsonify({
         'users': users,
